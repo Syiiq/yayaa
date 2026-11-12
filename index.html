@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="day">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffe4ec">
+  <title>Buket Kejutan</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%23ff86a6'%3E%3Ccircle cx='32' cy='18' r='12'/%3E%3Ccircle cx='46' cy='29' r='12'/%3E%3Ccircle cx='40' cy='45' r='12'/%3E%3Ccircle cx='24' cy='45' r='12'/%3E%3Ccircle cx='18' cy='29' r='12'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='8' fill='%23ffd86b'/%3E%3C/svg%3E">
+
+  <!-- Font: Fraunces (judul retro), Fredoka (UI), Caveat (tulisan tangan), Silkscreen (skor arcade) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,500;1,9..144,700&family=Fredoka:wght@400;500;600&family=Silkscreen&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Partikel kelopak yang melayang di seluruh halaman (fase 2 & 3) -->
+  <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+
+  <!-- Tirai lembut untuk transisi antarlayar -->
+  <div class="scene-veil" id="scene-veil" aria-hidden="true"></div>
+
+  <!-- Kontrol pojok: tema & musik -->
+  <div class="corner-controls">
+    <button class="pill-btn" id="btn-theme" type="button" title="Siang (Pastel Cerah)">
+      <svg class="ico ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+      <svg class="ico ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+      <span class="pill-label" id="theme-label">Siang</span>
+    </button>
+    <button class="icon-btn" id="btn-music" type="button" aria-pressed="true" aria-label="Matikan musik" title="Musik">
+      <svg class="ico ico-music" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+      <svg class="ico ico-mute" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M3 3l18 18"/></svg>
+    </button>
+  </div>
+
+  <main>
+    <!-- =============================================================
+         FASE 1 — MINI-GAME "TANGKAP KELOPAK"
+         ============================================================= -->
+    <section class="screen screen--game is-active" id="screen-game" aria-label="Mini-game Tangkap Kelopak">
+      <div class="retro-sun" aria-hidden="true"></div>
+      <canvas class="game-canvas" id="game-canvas" aria-hidden="true"></canvas>
+
+      <div class="hud" id="hud" hidden>
+        <div class="hud-score" id="hud-score-box">
+          <span class="hud-label">Skor</span>
+          <span class="hud-value" id="hud-score">0</span>
+        </div>
+        <div class="hud-combo" id="hud-combo">Kombo x1</div>
+        <div class="hud-progress" aria-hidden="true">
+          <div class="hud-progress-bar" id="hud-progress"></div>
+        </div>
+        <span class="hud-target">Target <b id="hud-target">100</b></span>
+      </div>
+
+      <div class="game-card" id="game-intro">
+        <p class="kicker" id="intro-kicker">Sebelum hadiahnya dibuka</p>
+        <h1 class="game-title">Tangkap <em>Kelopak!</em></h1>
+        <p class="game-lead">Kumpulkan <b id="intro-target">100</b> poin pakai keranjang kecil ini. Begitu skornya tercapai, hadiahmu terbuka.</p>
+        <ul class="legend" id="game-legend"><!-- diisi game.js --></ul>
+        <p class="game-tip">Tangkap terus tanpa kena awan atau kumbang, kombonya bakal naik.</p>
+        <button class="btn btn-primary btn-big" id="btn-start" type="button">Mulai main</button>
+        <p class="game-controls">Geser jari di layar, atau pakai tombol ← → di keyboard.</p>
+      </div>
+
+      <div class="game-card game-card--win" id="game-win" hidden>
+        <p class="kicker" id="win-kicker">Skor 100 tercapai</p>
+        <h2 class="game-title">Yeay, <em>berhasil!</em></h2>
+        <p class="game-lead" id="win-stats"></p>
+        <button class="btn btn-primary btn-big btn-pulse" id="btn-open-gift" type="button">Buka Buket Kejutanmu</button>
+      </div>
+
+      <canvas class="confetti-canvas" id="confetti-canvas" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- =============================================================
+         FASE 2 — BUKET BUNGA INTERAKTIF
+         ============================================================= -->
+    <section class="screen screen--bouquet" id="screen-bouquet" aria-label="Buket bunga">
+      <header class="bq-header">
+        <p class="kicker" id="bq-kicker">Buat kamu</p>
+        <h1 class="bq-title" id="bq-title">Ada <em>6 foto</em> yang ngumpet di buket ini</h1>
+        <p class="bq-lead">Ketuk bunga yang berkilau buat membukanya. Buketnya juga bisa kamu pegang dan goyangkan.</p>
+        <p class="bq-counter"><span id="bq-count">0</span>/<span id="bq-total">6</span> terbuka</p>
+      </header>
+
+      <div class="bq-layout">
+        <div class="tray tray--left" id="tray-left"></div>
+        <div class="bq-stage" id="bq-stage">
+          <div class="bouquet" id="bouquet"><!-- SVG dibangun bouquet.js --></div>
+        </div>
+        <div class="tray tray--right" id="tray-right"></div>
+      </div>
+
+      <p class="bq-final" id="bq-final" hidden></p>
+
+      <div class="bq-actions">
+        <button class="btn btn-camera" id="btn-ar" type="button">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2.4A1.5 1.5 0 0 1 9.9 5h4.2a1.5 1.5 0 0 1 1.3.6L17 8h3a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 19H4a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4 8Z"/><circle cx="12" cy="13" r="3.6"/></svg>
+          <span>Pegang Bunganya <small>(Mode Kamera AR)</small></span>
+        </button>
+      </div>
+
+      <!-- Lapisan untuk animasi polaroid yang keluar dari bunga -->
+      <div class="reveal-layer" id="reveal-layer" aria-hidden="true"></div>
+    </section>
+
+    <!-- =============================================================
+         FASE 3 — KAMERA AR (BUNGA DI TELAPAK TANGAN)
+         ============================================================= -->
+    <section class="screen screen--ar" id="screen-ar" aria-label="Mode kamera AR">
+      <div class="ar-stage" id="ar-stage">
+        <video class="ar-video" id="ar-video" playsinline muted autoplay></video>
+        <canvas class="ar-canvas" id="ar-canvas"></canvas>
+        <div class="ar-flash" id="ar-flash"></div>
+      </div>
+
+      <div class="ar-topbar">
+        <button class="icon-btn" id="btn-ar-back" type="button" aria-label="Kembali ke buket">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <p class="ar-hint" id="ar-hint" aria-live="polite"></p>
+      </div>
+
+      <div class="ar-bottombar" id="ar-controls">
+        <div class="flower-picker" id="flower-picker" role="radiogroup" aria-label="Pilih bunga"></div>
+        <button class="shutter" id="btn-shutter" type="button" aria-label="Ambil foto"><span></span></button>
+      </div>
+
+      <!-- Panel izin kamera -->
+      <div class="ar-panel" id="ar-permission">
+        <div class="ar-panel-card">
+          <div class="ar-panel-icon" aria-hidden="true">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V10m0-4.5v-1a1.5 1.5 0 0 1 3 0V10m0-4a1.5 1.5 0 0 1 3 0V11m0-2.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.8-2.4L4.4 15a1.5 1.5 0 0 1 2.4-1.8L7 13.5"/></svg>
+          </div>
+          <h2>Boleh pinjam kameramu sebentar?</h2>
+          <p>Kamera dipakai buat menaruh bunga di telapak tanganmu. Gambarnya diolah di perangkat ini saja, tidak dikirim ke mana pun.</p>
+          <button class="btn btn-primary" id="btn-cam-allow" type="button">Nyalakan kamera</button>
+          <button class="btn-link" data-ar-back type="button">Kembali ke buket</button>
+        </div>
+      </div>
+
+      <!-- Panel galat (izin ditolak, tidak ada kamera, dll.) -->
+      <div class="ar-panel" id="ar-error" hidden>
+        <div class="ar-panel-card">
+          <div class="ar-panel-icon ar-panel-icon--soft" aria-hidden="true">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.4A1.5 1.5 0 0 1 9.9 5h4.2a1.5 1.5 0 0 1 1.3.6L17 8h3a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 19H4a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4 8Z"/><path d="M3 3l18 18"/></svg>
+          </div>
+          <h2 id="ar-error-title">Kamera belum bisa dipakai</h2>
+          <p id="ar-error-text"></p>
+          <button class="btn btn-primary" id="btn-cam-retry" type="button">Coba lagi</button>
+          <button class="btn-link" data-ar-back type="button">Kembali ke buket</button>
+        </div>
+      </div>
+
+      <div class="ar-loading" id="ar-loading" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="ar-loading-text">Menyalakan kamera…</span>
+      </div>
+
+      <!-- Pratinjau hasil foto -->
+      <div class="photo-preview" id="photo-preview" hidden role="dialog" aria-modal="true" aria-label="Hasil foto">
+        <div class="photo-preview-card">
+          <img id="photo-preview-img" alt="Hasil foto dengan bunga di tangan">
+          <div class="photo-preview-actions">
+            <a class="btn btn-primary" id="btn-save-photo" href="#" download>Simpan foto</a>
+            <button class="btn" id="btn-share-photo" type="button" hidden>Bagikan</button>
+            <button class="btn btn-ghost" id="btn-retake" type="button">Foto lagi</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lightbox foto polaroid -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto">
+    <div class="lightbox-backdrop" data-close></div>
+    <figure class="lightbox-card" id="lightbox-card">
+      <button class="icon-btn lightbox-close" type="button" data-close aria-label="Tutup foto">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="lightbox-photo"><img id="lightbox-img" alt=""></div>
+      <figcaption>
+        <p class="lightbox-caption" id="lightbox-caption"></p>
+        <p class="lightbox-message" id="lightbox-message"></p>
+      </figcaption>
+      <div class="lightbox-nav">
+        <button class="icon-btn" type="button" id="lightbox-prev" aria-label="Foto sebelumnya">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <span id="lightbox-pos">1/6</span>
+        <button class="icon-btn" type="button" id="lightbox-next" aria-label="Foto berikutnya">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </figure>
+  </div>
+
+  <!-- Urutan skrip: konfigurasi → utilitas → tiap fase → perakit -->
+  <script src="js/config.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/bouquet.js"></script>
+  <script src="js/ar.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
